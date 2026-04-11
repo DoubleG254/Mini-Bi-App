@@ -1,0 +1,30 @@
+'''Classify the semantic type and recommend an aggregation method for the dataset column based on its name and features.
+    1. Semantic type (choose one from the list or create a new one reasonably):
+    - financial_total
+    - performance_score
+    - countable
+    - ratio
+    - category
+    - identifier
+    - other
+ 
+ 2. Recommended aggregation:
+    - sum
+    - mean
+   - count
+   - none
+Extracted features for column 'athlete_id': {'mean': np.float64(73686.18895532646), 'std': np.float64(42868.96015756258), 'min': np.int64(1), 'max': np.int64(149814), 'unique_ratio': 1.0, 'is_numeric': 1, 'is_integer': 1, 'name_length': 10, 'sample_values': [1, 2, 3, 4, 5]}
+Extracted features for column 'name': {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'unique_ratio': 0.9813058419243986, 'is_numeric': 0, 'is_integer': 0, 'name_length': 4, 'sample_values': ['Jean-François Blanchy', 'Arnaud Boetsch', 'Jean Borotra', 'Jacques Brugnon', 'Albert Canet']}
+Extracted features for column 'born_date': {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'unique_ratio': 0.2837044673539519, 'is_numeric': 0, 'is_integer': 0, 'name_length': 9, 'sample_values': ['1886-12-12', '1969-04-01', '1898-08-13', '1895-05-11', '1878-04-17']}
+Extracted features for column 'born_city': {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'unique_ratio': 0.1537319587628866, 'is_numeric': 0, 'is_integer': 0, 'name_length': 9, 'sample_values': ['Bordeaux', 'Meulan', 'Biarritz', 'Paris VIIIe', 'Wandsworth']}
+Extracted features for column 'born_region': {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'unique_ratio': 0.017553264604810995, 'is_numeric': 0, 'is_integer': 0, 'name_length': 11, 'sample_values': ['Gironde', 'Yvelines', 'Pyrénées-Atlantiques', 'Paris', 'England']}
+Extracted features for column 'born_country': {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'unique_ratio': 0.0016219931271477662, 'is_numeric': 0, 'is_integer': 0, 'name_length': 12, 'sample_values': ['FRA', 'GBR', 'MAR', 'FPN', 'IRQ']}
+Extracted features for column 'noc': {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'unique_ratio': 0.004783505154639175, 'is_numeric': 0, 'is_integer': 0, 'name_length': 3, 'sample_values': ['France', 'Great Britain', 'Germany West Germany', 'West Germany', 'Germany']}
+Extracted features for column 'height_cm': {'mean': np.float64(176.3337240157148), 'std': np.float64(10.380281757520828), 'min': np.float64(127.0), 'max': np.float64(226.0), 'unique_ratio': 0.0006529209621993127, 'is_numeric': 1, 'is_integer': 1, 'name_length': 9, 'sample_values': [183.0, 168.0, 181.0, 180.0, 165.0]}
+Extracted features for column 'weight_kg': {'mean': np.float64(71.89099637503674), 'std': np.float64(14.465540136828016), 'min': np.float64(25.0), 'max': np.float64(198.0), 'unique_ratio': 0.0009690721649484536, 'is_numeric': 1, 'is_integer': 1, 'name_length': 9, 'sample_values': [76.0, 64.0, 70.0, 73.0, 58.0]}
+Extracted features for column 'died_date': {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'unique_ratio': 0.1375189003436426, 'is_numeric': 0, 'is_integer': 0, 'name_length': 9, 'sample_values': ['1960-10-02', '1994-07-17', '1978-03-20', '1930-07-25', '1987-04-02']}
+only respond in the following JSON format
+    {{
+      "semantic": "...",
+      "aggregation": "..."
+    }}'''
