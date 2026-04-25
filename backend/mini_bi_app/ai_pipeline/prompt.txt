@@ -7,6 +7,8 @@
     - category
     - identifier
     - other
+    -date
+    
  
  2. Recommended aggregation:
     - sum
