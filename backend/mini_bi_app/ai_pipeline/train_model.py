@@ -1,7 +1,12 @@
 import os
+import sys
 import django
 import numpy as np
 import joblib
+
+# Add the backend directory to the Python path
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, backend_dir)
 
 # Setup Django environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mini_bi.settings")
@@ -21,6 +26,7 @@ def load_training_data():
 
     X = []
     y = []
+    metadata = []  # Store aggregation separately
 
     for row in data:
         features = row.features
@@ -28,20 +34,41 @@ def load_training_data():
 
         X.append([
             features.get("mean", 0),
+            features.get("std", 0),
             features.get("max", 0),
             features.get("min", 0),
+            features.get("skewness", 0),
+            features.get("kurtosis", 0),
+            features.get("zero_ratio", 0),
             features.get("unique_ratio", 0),
-            features.get("is_numeric", 0),
-            features.get("is_integer", 0),
+            features.get("has_cost", 0),
+            features.get("has_revenue", 0),
+            features.get("has_id", 0),
+            features.get("has_date", 0),
+            features.get("has_ratio", 0),
+            features.get("has_score", 0),
+            features.get("has_bound", 0),
+            features.get("has_reg", 0),
+            features.get("has_url_pattern", 0),
+            features.get("has_email_pattern", 0),
+            features.get("has_phone_pattern", 0),
+            features.get("has_at_symbol", 0),
+            features.get("has_http", 0),
+            features.get("has_dots", 0),
+            features.get("phone_ratio", 0),
+            features.get("has_geo_keywords", 0),
+            features.get("has_cat_keywords", 0),
+            features.get("is_unnamed", 0),
             features.get("name_length", 0),
         ])
 
-        y.append({
+        y.append(label)
+        metadata.append({
             "label": label,
             "aggregation": row.aggregation
         })
 
-    return np.array(X), np.array(y)
+    return np.array(X), np.array(y), metadata
 
 
 # -------------------------------
@@ -50,10 +77,11 @@ def load_training_data():
 def train_model(X, y):
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=42, stratify=y
     )
 
     model = RandomForestClassifier(
+        class_weight='balanced',
         n_estimators=100,
         max_depth=10,
         random_state=42
@@ -93,7 +121,7 @@ def save_model(model):
 if __name__ == "__main__":
     print("Training Semantic Classification Model...")
 
-    X, y = load_training_data()
+    X, y, metadata = load_training_data()
 
     if len(X) == 0:
         print("No training data found.")

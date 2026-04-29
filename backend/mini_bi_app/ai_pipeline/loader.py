@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 def load_dataset(file_path):
     """
@@ -11,6 +12,10 @@ def load_dataset(file_path):
     pd.DataFrame: The content of the file as a DataFrame.
     """
     try:
+        # Check if file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File does not exist: {file_path}")
+        
         if file_path.endswith('.csv'):
             return pd.read_csv(file_path)
         elif file_path.endswith('.xlsx'):
@@ -21,4 +26,6 @@ def load_dataset(file_path):
             raise ValueError("Unsupported file format. Only .csv, .xlsx, and .xls are supported.")
     except Exception as e:
         print(f"Error loading file: {e}")
+        print(f"Attempted path: {file_path}")
+        print(f"File exists: {os.path.exists(file_path)}")
         return None
