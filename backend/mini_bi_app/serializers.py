@@ -88,14 +88,14 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 class DatasetSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), source='user', write_only=True  # Changed 'User' to 'user'
+    user = serializers.PrimaryKeyRelatedField(
+        read_only=True
     )
+
 
     class Meta:
         model = Dataset
-        fields = ['id', 'user', 'user_id', 'name', 'file', 'created_at']
+        fields = ['id', 'user', 'name', 'file', 'created_at']
         read_only_fields = ['id', 'created_at', 'user']  # Make user read-only if view handles it
 
     def create(self, validated_data):
@@ -105,14 +105,14 @@ class DatasetSerializer(serializers.ModelSerializer):
 
 # Report Serializer
 class ReportSerializer(serializers.ModelSerializer):
-    File = DatasetSerializer(read_only=True)
-    File_id = serializers.PrimaryKeyRelatedField(
-        queryset=Dataset.objects.all(), source='File', write_only=True
+    file =serializers.PrimaryKeyRelatedField(
+        read_only=True
     )
+  
 
     class Meta:
         model = Report
-        fields = ['id', 'File', 'File_id', 'name', 'summary', 'charts', 'created_at']
+        fields = ['id', 'file', 'summary', 'charts', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -125,17 +125,16 @@ class ColumnTrainingDataSerializer(serializers.ModelSerializer):
 
 # ColumnPrediction Serializer
 class ColumnPredictionSerializer(serializers.ModelSerializer):
-    file = DatasetSerializer(read_only=True)
-    file_id = serializers.PrimaryKeyRelatedField(
-        queryset=Dataset.objects.all(), source='file', write_only=True
+    file = serializers.PrimaryKeyRelatedField(
+        read_only=True
     )
+ 
 
     class Meta:
         model = ColumnPrediction
         fields = [
             'id',
             'file',
-            'file_id',
             'column_name',
             'semantic_label',
             'confidence_score',
