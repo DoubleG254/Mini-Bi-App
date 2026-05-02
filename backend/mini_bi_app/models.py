@@ -1,3 +1,5 @@
+from random import sample
+
 from django.db import models
 from django.contrib.auth.models import User  
 
@@ -14,6 +16,7 @@ class Dataset (models.Model):
         return self.name
 
 class Report(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     summary = models.JSONField()
     charts = models.JSONField()
@@ -26,7 +29,7 @@ class ColumnTrainingData(models.Model):
     column_name = models.CharField(max_length=100)
     features = models.JSONField()
     semantic_label = models.CharField(max_length=100)
-    aggregation = models.CharField(max_length=50, null=True, blank=True)  # Optional field for aggregation type
+    sample_values = models.JSONField(null=True, blank=True)  # Store sample values for reference
 
     def __str__(self):
         return self.column_name

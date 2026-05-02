@@ -108,11 +108,14 @@ class ReportSerializer(serializers.ModelSerializer):
     file =serializers.PrimaryKeyRelatedField(
         read_only=True
     )
+    user = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
   
 
     class Meta:
         model = Report
-        fields = ['id', 'file', 'summary', 'charts', 'created_at']
+        fields = ['id', 'user','file', 'summary', 'charts', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 

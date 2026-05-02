@@ -13,12 +13,12 @@ from .llm import llm_classify
 from mini_bi_app.models import ColumnPrediction
 
 # Construct the model path relative to this script's location
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.pkl")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "semantic_classifier.pkl")
 model = joblib.load(MODEL_PATH)
 
 def classify_column(df, col, dataset_instance=None):
     features = extract_features(df, col)
-    # print(f"Classifying column: {col} with features: {features}")
+    print(f"Classifying column: {col} with features: {features}")
 
     prediction = model.predict([list(features.values())])[0]
     confidence = max(model.predict_proba([list(features.values())])[0])
