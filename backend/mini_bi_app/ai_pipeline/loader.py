@@ -17,7 +17,7 @@ def load_dataset(file_path):
             raise FileNotFoundError(f"File does not exist: {file_path}")
         
         if file_path.endswith('.csv'):
-            return pd.read_csv(file_path)
+            return pd.read_csv(file_path, low_memory=False, dtype=str)
         elif file_path.endswith('.xlsx'):
             return pd.read_excel(file_path)
         elif file_path.endswith('.xls'):

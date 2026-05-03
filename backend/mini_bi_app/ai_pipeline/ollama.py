@@ -1,10 +1,11 @@
 import ollama
 import json
 import time
+import re
 
 class OllamaLabeler:
     
-    def __init__(self, model="gemma3:1b"):
+    def __init__(self, model="deepseek-r1:7b"):
         self.model = model
         self.semantic_types = [
             "identifier", "date", "timestamp", "time_period",
@@ -20,15 +21,8 @@ its name, statistical features, and sample values.
 
 Column Name: {col_name}
 Sample Values: {features['sample_values']}
-Features:
-  - Is Numeric: {features['is_numeric']}
-  - Is Integer: {features['is_integer']}
-  - Unique Ratio: {features['unique_ratio']}
-  - Mean: {features['mean']}
-  - Std: {features['std']}
-  - Min: {features['min']}
-  - Max: {features['max']}
-  - Null Ratio: {features['null_ratio']}
+Features:{features}
+  
 
 Valid semantic types: {', '.join(self.semantic_types)}
 
@@ -70,31 +64,4 @@ Respond ONLY in this exact JSON format:
         
         return None
     
-    def label_dataset(self, df: pd.DataFrame, 
-                      save_path="labeled_data.json") -> list:
-        extractor = ColumnFeatureExtractor()
-        labeled   = []
-        
-        for col in df.columns:
-            print(f"Labeling: {col}")
-            
-            features      = extractor.extract(col, df[col])
-            sample_values = df[col].dropna().head(5).tolist()
-            label         = self.label_column(col, features, sample_values)
-            
-            if label:
-                labeled.append({
-                    "column_name": col,
-                    "features":    features,
-                    "label":       label
-                })
-                print(f"  → {label['semantic']} ({label['aggregation']})")
-            else:
-                print(f"  → Failed to label")
-        
-        # Save labeled data
-        with open(save_path, "w") as f:
-            json.dump(labeled, f, indent=2)
-        
-        print(f"\nLabeled {len(labeled)}/{len(df.columns)} columns")
-        return labeled
+   

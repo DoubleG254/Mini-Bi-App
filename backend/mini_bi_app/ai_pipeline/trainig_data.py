@@ -11,8 +11,6 @@ django.setup()
 
 from mini_bi_app.models import ColumnTrainingData, Report
 
-ColumnTrainingData.objects.all().delete()  # Clear existing data to avoid duplicates
-Report.objects.all().delete()  # Clear existing reports to avoid duplicates 
 
 def get_training_data():
     training_data = ColumnTrainingData.objects.all()
