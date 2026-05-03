@@ -7,8 +7,8 @@ from django.conf import settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mini_bi.settings')
 django.setup()
 import joblib
-from features import extract_features
-from llm import llm_classify
+from .features import extract_features
+from .llm import llm_classify
 from mini_bi_app.models import ColumnTrainingData
 from mini_bi_app.models import ColumnPrediction
 
@@ -34,20 +34,20 @@ def classify_column(df, col, dataset_instance=None):
         else:
             return 'none'
 
-    if confidence < 0.7:
-        llm_result = llm_classify(col, features, sample_values)
+    # if confidence < 0.7:
+    #     llm_result = llm_classify(col, features, sample_values)
 
-        # store for learning
-        ColumnTrainingData.objects.create(
-            column_name=col,
-            features=features,
-            semantic_label=llm_result["semantic"],
-            sample_values=sample_values
-        )
+    #     # store for learning
+    #     ColumnTrainingData.objects.create(
+    #         column_name=col,
+    #         features=features,
+    #         semantic_label=llm_result["semantic"],
+    #         sample_values=sample_values
+    #     )
 
         
 
-        return llm_result
+    #     return llm_result
 
     if dataset_instance:
         ColumnPrediction.objects.create(

@@ -105,7 +105,7 @@ class DatasetSerializer(serializers.ModelSerializer):
 
 # Report Serializer
 class ReportSerializer(serializers.ModelSerializer):
-    file =serializers.PrimaryKeyRelatedField(
+    dataset =serializers.PrimaryKeyRelatedField(
         read_only=True
     )
     user = serializers.PrimaryKeyRelatedField(
@@ -115,7 +115,7 @@ class ReportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Report
-        fields = ['id', 'user','file', 'summary', 'charts', 'created_at']
+        fields = ['id', 'user','dataset', 'summary', 'charts', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -128,7 +128,7 @@ class ColumnTrainingDataSerializer(serializers.ModelSerializer):
 
 # ColumnPrediction Serializer
 class ColumnPredictionSerializer(serializers.ModelSerializer):
-    file = serializers.PrimaryKeyRelatedField(
+    dataset = serializers.PrimaryKeyRelatedField(
         read_only=True
     )
  
@@ -137,7 +137,7 @@ class ColumnPredictionSerializer(serializers.ModelSerializer):
         model = ColumnPrediction
         fields = [
             'id',
-            'file',
+            'dataset',
             'column_name',
             'semantic_label',
             'confidence_score',

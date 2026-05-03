@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'mini_bi_app',
     'corsheaders',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -143,10 +144,16 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # This enables the browsable API
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
    
 
 }
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'My Django API',
+    'DESCRIPTION': 'Documentation for my API endpoints',
+    'VERSION': '1.0.0',
+}
 from datetime import timedelta
 
 SIMPLE_JWT = {

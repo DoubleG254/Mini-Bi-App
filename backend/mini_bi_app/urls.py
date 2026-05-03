@@ -6,11 +6,14 @@ from .views import (
     RegisterView,
     LoginView,
     LogoutView,
-    UserProfileView
+    UserProfileView,
+    ReportViewSet
 )
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 router = DefaultRouter()
 router.register(r'datasets', DatasetViewSet, basename='datasets')
+router.register(r'reports', ReportViewSet, basename='reports')
 
 urlpatterns = [
     path('', include(router.urls)),  # ✅ include router
@@ -19,4 +22,6 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('profile/', UserProfileView.as_view(), name='profile'),
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]

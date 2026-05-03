@@ -1,6 +1,6 @@
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import ValidationError
@@ -20,11 +20,16 @@ import os
 from .ai_pipeline.pipeline import run_pipeline
 
 
-class RegisterView(APIView):
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+
+class RegisterView(GenericAPIView):
     permission_classes = [AllowAny]
+    serializer_class = UserRegistrationSerializer
 
     def post(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -34,12 +39,12 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoginView(APIView):
+class LoginView(GenericAPIView):
     permission_classes = [AllowAny]
+    serializer_class = CustomTokenObtainPairSerializer
 
-    
     def post(self, request):
-        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             return Response(
                 {
@@ -51,35 +56,39 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
 
-
-class LogoutView(APIView):
+class LogoutView(GenericAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = LogoutSerializer
 
     def post(self, request):
-        try:
-            refresh_token = request.data["refresh"]
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-            return Response(
-                {"message": "Logged out successfully"},
-                status=status.HTTP_200_OK
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                refresh_token = serializer.validated_data["refresh"]
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response(
+                    {"message": "Logged out successfully"},
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                return Response(
+                    {"error": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserProfileView(APIView):
+class UserProfileView(GenericAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
 
     def get(self, request):
-        serializer = UserSerializer(request.user)
+        serializer = self.get_serializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = self.get_serializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -87,6 +96,15 @@ class UserProfileView(APIView):
                 status=status.HTTP_200_OK
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ReportViewSet(ModelViewSet):
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        print("Getting reports for user:", self.request.user)
+        return Report.objects.filter(dataset__user=self.request.user)
+ 
     
 class DatasetViewSet(ModelViewSet):
     queryset = Dataset.objects.all()
@@ -112,11 +130,7 @@ class DatasetViewSet(ModelViewSet):
             report = run_pipeline(file_path, dataset_instance=instance)
             print("Report created with ID:", report.id)
             serializer = ReportSerializer(report)
-            print("Report summary:", serializer.data['summary'])
-            # Here you would add the logic to read the file and classify columns
-            # For example:
-            # df = pd.read_csv(file_path) or pd.read_excel(file_path)
-            # profiles = classify_columns(df)
+            return serializer.data
         else:
             print("Unsupported file type:", file_path)
             instance.delete()  # Clean up the uploaded file
