@@ -1,5 +1,5 @@
 from operator import ge
-# from mini_bi_app.models import Report
+from mini_bi_app.models import Report
 from .classifier import classify_columns
 from .loader import load_dataset
 from .preprocess import preprocess
