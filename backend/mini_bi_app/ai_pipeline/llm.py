@@ -3,13 +3,10 @@ import json
 import re
 
 def query_llm(prompt):
-    ollama_path = r"C:\Users\Hp\AppData\Local\Programs\Ollama\ollama.exe"
-    
-    print(f"[DEBUG] Using Ollama path: {ollama_path}")
     
     try:
         result = subprocess.run(
-            [ollama_path, "run", "deepseek-r1:7b","--think=false"],
+            ["ollama", "run", "deepseek-r1:1.5b","--think=false"],
             input=prompt,
             text=True,
             encoding='utf-8',
