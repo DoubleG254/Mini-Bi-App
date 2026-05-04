@@ -1,17 +1,33 @@
 import { A, useLocation, useNavigate } from "@solidjs/router";
+import { createSignal, Show } from "solid-js";
 import { ChartBarIcon, Upload, History, LogOut } from "lucide-solid";
+import { logoutSession } from "../lib/api";
 
 export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [logoutError, setLogoutError] = createSignal<string | null>(null);
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path);
   };
 
-  // Call server api
-  const handleLogout = () => {
-    navigate("/");
+  const navClass = (path: string) => {
+    if (isActive(path)) {
+      return "bg-accent text-accent-foreground";
+    }
+
+    return "text-muted-foreground hover:text-foreground";
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutSession();
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : "Unable to sign out");
+    } finally {
+      navigate("/", { replace: true });
+    }
   };
 
   return (
@@ -29,29 +45,20 @@ export function Navigation() {
             <div class="flex items-center gap-1">
               <A
                 href="/dashboard"
-                class={`px-4 py-2 rounded-lg transition-colors ${isActive("/dashboard")
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
+                class={`px-4 py-2 rounded-lg transition-colors ${navClass("/dashboard")}`}
               >
                 Dashboard
               </A>
               <A
                 href="/upload"
-                class={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${isActive("/upload")
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
+                class={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${navClass("/upload")}`}
               >
                 <Upload class="w-4 h-4" />
                 Upload
               </A>
               <A
                 href="/history"
-                class={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${isActive("/history")
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
+                class={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${navClass("/history")}`}
               >
                 <History class="w-4 h-4" />
                 History
@@ -67,6 +74,9 @@ export function Navigation() {
             Sign Out
           </button>
         </div>
+        <Show when={logoutError()}>
+          <p class="mt-3 text-sm text-red-500">{logoutError()}</p>
+        </Show>
       </div>
     </nav>
   );

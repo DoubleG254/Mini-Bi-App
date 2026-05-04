@@ -2,15 +2,15 @@
 import './index.css';
 import { render } from 'solid-js/web';
 import 'solid-devtools';
-import { lazy } from 'solid-js';
 
 import { Router, Route } from '@solidjs/router';
-const Register = lazy(() => import('./components/pages/Register'))
-const SignInPage = lazy(() => import('./components/pages/SignIn'))
-const AnalyticsPage = lazy(() => import('./components/pages/Analytics'))
-const UploadPage = lazy(() => import('./components/pages/Upload'))
-const HistoryPage = lazy(() => import('./components/pages/History'))
-
+import { ProtectedRoute, PublicRoute } from './components/guards';
+import Register from './components/pages/Register'
+import SignInPage from './components/pages/SignIn'
+import AnalyticsPage from './components/pages/Analytics'
+import UploadPage from './components/pages/Upload'
+import HistoryPage from './components/pages/History'
+import DashboardPage from './components/pages/Dashboard'
 
 const root = document.getElementById('root');
 
@@ -21,9 +21,15 @@ if (!(root instanceof HTMLElement)) {
 }
 
 render(() => <Router>
-  <Route path="/register" component={Register} />
-  <Route path="/" component={SignInPage} />
-  <Route path="/analytics/:id" component={AnalyticsPage} />
-  <Route path="/upload" component={UploadPage} />
-  <Route path="/history" component={HistoryPage} />
+  <PublicRoute>
+    <Route path="/register" component={Register} />
+    <Route path="/" component={SignInPage} />
+  </PublicRoute>
+
+  <ProtectedRoute>
+    <Route path="/dashboard" component={DashboardPage} />
+    <Route path="/analytics/:datasetId" component={AnalyticsPage} />
+    <Route path="/upload" component={UploadPage} />
+    <Route path="/history" component={HistoryPage} />
+  </ProtectedRoute>
 </Router>, root);

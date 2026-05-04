@@ -1,14 +1,16 @@
 import { useNavigate } from "@solidjs/router";
 import { Navigation } from "../Navigation";
 import { Upload as UploadIcon, FileSpreadsheet, CircleCheckIcon } from "lucide-solid";
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, Switch, Match } from "solid-js";
 import { JSX } from "solid-js/h/jsx-runtime";
+import { getDatasetBaseName, type ApiResult, uploadDataset } from "../../lib/api";
 
 export default function UploadPage() {
   const navigate = useNavigate();
   const [isDragging, setIsDragging] = createSignal(false);
   const [file, setFile] = createSignal<File | null>(null);
   const [uploading, setUploading] = createSignal(false);
+  const [result, setResult] = createSignal<ApiResult<{ id: number }> | null>(null);
 
   const handleDragOver: JSX.EventHandler<HTMLDivElement, DragEvent> = (e) => {
     e.preventDefault();
@@ -47,16 +49,34 @@ export default function UploadPage() {
     return validTypes.includes(file.type) || file.name.match(/\.(csv|xls|xlsx)$/i);
   };
 
-  // Handler to api
   const handleUpload = async () => {
-    if (!file()) return;
+    if (!file()) {
+      return;
+    }
 
     setUploading(true);
-    // Mock upload and analysis - in production this would call the backend
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setResult(null);
 
-    // Navigate to analytics with mock dataset ID
-    navigate("/analytics/new-dataset");
+    try {
+      const dataset = await uploadDataset(file()!, getDatasetBaseName(file()!.name));
+
+      const nextResult: ApiResult<{ id: number }> = {
+        success: true,
+        message: "Dataset uploaded and analysis started successfully",
+        data: { id: dataset.id },
+        redirectTo: `/analytics/${dataset.id}`,
+      };
+
+      setResult(nextResult);
+      navigate(nextResult.redirectTo ?? `/analytics/${dataset.id}`, { replace: true });
+    } catch (error) {
+      setResult({
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to upload dataset",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -71,13 +91,10 @@ export default function UploadPage() {
         </div>
 
         <div
-          on:dragover={handleDragOver}
-          on:dragleave={handleDragLeave}
-          on:drop={handleDrop}
-          class={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragging()
-            ? "border-primary bg-primary/5"
-            : "border-border bg-card"
-            }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          class={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragging() ? "border-primary bg-primary/5" : "border-border bg-card"}`}
         >
           <input
             type="file"
@@ -113,7 +130,7 @@ export default function UploadPage() {
               <div>
                 <div class="flex items-center justify-center gap-2 mb-2">
                   <FileSpreadsheet class="w-5 h-5 text-muted-foreground" />
-                  <h3>{file.name}</h3>
+                  <h3>{file()?.name}</h3>
                 </div>
                 <p class="text-muted-foreground">
                   {(file()!.size / 1024 / 1024).toFixed(2)} MB
@@ -136,6 +153,15 @@ export default function UploadPage() {
                 <Show when={uploading()} fallback="Upload & Analyze">Analyzing...</Show>
               </button>
             </div>
+
+            <Show when={result()}>
+              <div class={`mt-6 rounded-lg border px-4 py-3 text-sm ${result()?.success ? "border-green-500/30 bg-green-500/10 text-green-700" : "border-red-500/30 bg-red-500/10 text-red-600"}`}>
+                <Switch>
+                  <Match when={result()?.success}>{result()?.message}</Match>
+                  <Match when={!result()?.success}>{result()?.message}</Match>
+                </Switch>
+              </div>
+            </Show>
           </Show>
         </div>
       </div>
