@@ -1,7 +1,8 @@
 import subprocess
 import json
 import re
-
+from ollama import Client
+# from dotenv import load_dotenv
 def query_llm(prompt):
     
     try:
