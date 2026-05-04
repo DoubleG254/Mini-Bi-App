@@ -1,0 +1,15 @@
+{
+    "biome.enabled": true,
+    "biome.lsp.bin": {
+        "linux-x64": "frontend/node_modules/@biomejs/cli-linux-x64/biome",
+        "linux-arm64-musl": "/path/to/biome",
+        "darwin-arm64": "/path/to/biome",
+        "win32-x64": "C:\\path\\to\\biome.exe"
+    },
+    "[css][typescript][html][typescriptreact]": {
+        "editor.defaultFormatter": "biomejs.biome",
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    }
+}
