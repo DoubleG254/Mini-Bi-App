@@ -10,7 +10,9 @@ export type ApiResult<T> = {
   message: string;
   /** The data returned from the  */
   data?: T;
+  /** The error associated with the api result failure */
   error?: string;
+  /** The url to redirect to */
   redirectTo?: string;
 };
 
