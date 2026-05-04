@@ -144,15 +144,6 @@ export default function UploadPage() {
               </button>
             </div>
 
-            <div class="mt-8 flex justify-end">
-              <button
-                onClick={handleUpload}
-                disabled={uploading()}
-                class="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                <Show when={uploading()} fallback="Upload & Analyze">Analyzing...</Show>
-              </button>
-            </div>
 
             <Show when={result()}>
               <div class={`mt-6 rounded-lg border px-4 py-3 text-sm ${result()?.success ? "border-green-500/30 bg-green-500/10 text-green-700" : "border-red-500/30 bg-red-500/10 text-red-600"}`}>
@@ -163,6 +154,16 @@ export default function UploadPage() {
               </div>
             </Show>
           </Show>
+        </div>
+        
+        <div class="mt-8 flex justify-end">
+          <button
+            on:click={handleUpload}
+            disabled={uploading()}
+            class="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            <Show when={uploading()} fallback="Upload & Analyze">Analyzing...</Show>
+          </button>
         </div>
       </div>
     </div>

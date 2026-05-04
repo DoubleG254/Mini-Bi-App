@@ -1,6 +1,19 @@
 import subprocess
 import json
+import os
 import re
+from ollama import Client
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+
+client = Client(
+    host = "https://ollama.com",
+    headers= {"Authorization": f"Bearer {os.getenv("OLLAMA_API_KEY")}"}
+)
+
 
 def query_llm(prompt):
     ollama_path = r"C:\Users\Hp\AppData\Local\Programs\Ollama\ollama.exe"
@@ -126,7 +139,19 @@ def llm_classify(col_name, features,sample_values):
     gl_acct with values [79020, 85010]         → code, none
     profit with values [500, -200, 300]        → financial_change, sum
     """
-    USER_PROMPT_TEMPLATE = """
+
+    # response = query_llm(SYSTEM_PROMPT + USER_PROMPT_TEMPLATE.format(
+    #     col_name=col_name,
+    #     features = features,
+    #     sample_values = sample_values
+    #             ))
+    response = client.chat(
+        model="gpt-oss:120b-cloud",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": """
     Classify this dataset column:
 
     Column Name: "{col_name}"
@@ -140,13 +165,10 @@ def llm_classify(col_name, features,sample_values):
     "semantic": "<type>",
     "aggregation": "<method>"
     }}
-    """
-
-    response = query_llm(SYSTEM_PROMPT + USER_PROMPT_TEMPLATE.format(
-        col_name=col_name,
-        features = features,
-        sample_values = sample_values
-                ))
+    """,
+            },
+        ],
+    )["message"]["content"]
     print(f"LLM raw response for column '{col_name}': {response}")
 
     try:
@@ -161,8 +183,3 @@ def llm_classify(col_name, features,sample_values):
     except Exception as e:
         print(f"[ERROR] Failed to parse LLM response: {e}")
         return {"semantic": "general", "aggregation": "mean"}
-
-
-
-
-
