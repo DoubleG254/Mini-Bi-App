@@ -1,7 +1,6 @@
 /* @refresh reload */
 import './index.css';
 import { render } from 'solid-js/web';
-import 'solid-devtools';
 
 import { Router, Route } from '@solidjs/router';
 import { ProtectedRoute, PublicRoute } from './components/guards';
@@ -20,16 +19,54 @@ if (!(root instanceof HTMLElement)) {
   );
 }
 
-render(() => <Router>
+// wrapper components so the guard runs inside a Route context
+const PublicRegister = () => (
   <PublicRoute>
-    <Route path="/register" component={Register} />
-    <Route path="/" component={SignInPage} />
+    <Register />
   </PublicRoute>
+);
 
+const PublicSignIn = () => (
+  <PublicRoute>
+    <SignInPage />
+  </PublicRoute>
+);
+
+const ProtectedDashboard = () => (
   <ProtectedRoute>
-    <Route path="/dashboard" component={DashboardPage} />
-    <Route path="/analytics/:datasetId" component={AnalyticsPage} />
-    <Route path="/upload" component={UploadPage} />
-    <Route path="/history" component={HistoryPage} />
+    <DashboardPage />
   </ProtectedRoute>
-</Router>, root);
+);
+
+const ProtectedAnalytics = () => (
+  <ProtectedRoute>
+    <AnalyticsPage />
+  </ProtectedRoute>
+);
+
+const ProtectedUpload = () => (
+  <ProtectedRoute>
+    <UploadPage />
+  </ProtectedRoute>
+);
+
+const ProtectedHistory = () => (
+  <ProtectedRoute>
+    <HistoryPage />
+  </ProtectedRoute>
+);
+
+render(
+  () => (
+    <Router>
+      <Route path="/" component={PublicSignIn} />
+      <Route path="/register" component={PublicRegister} />
+
+      <Route path="/dashboard" component={ProtectedDashboard} />
+      <Route path="/analytics/:datasetId" component={ProtectedAnalytics} />
+      <Route path="/upload" component={ProtectedUpload} />
+      <Route path="/history" component={ProtectedHistory} />
+    </Router>
+  ),
+  root,
+);
