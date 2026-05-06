@@ -34,20 +34,20 @@ def classify_column(df, col, dataset_instance=None):
         else:
             return 'none'
 
-    # if confidence < 0.7:
-    #     llm_result = llm_classify(col, features, sample_values)
+    if confidence < 0.7:
+        llm_result = llm_classify(col, features, sample_values)
 
-    #     # store for learning
-    #     ColumnTrainingData.objects.create(
-    #         column_name=col,
-    #         features=features,
-    #         semantic_label=llm_result["semantic"],
-    #         sample_values=sample_values
-    #     )
+        # store for learning
+        ColumnTrainingData.objects.create(
+            column_name=col,
+            features=features,
+            semantic_label=llm_result["semantic"],
+            sample_values=sample_values
+        )
 
         
 
-    #     return llm_result
+        return llm_result
 
     if dataset_instance:
         ColumnPrediction.objects.create(
