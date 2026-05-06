@@ -2,11 +2,17 @@ import { clearAuthSession, getAccessToken, getRefreshToken, setAuthSession } fro
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
+/** The type of result returned from the api */
 export type ApiResult<T> = {
+  /** A boolean to indicate whether or not a successful result was obtained */
   success: boolean;
+  /** The result message associated with the response */
   message: string;
+  /** The data returned from the  */
   data?: T;
+  /** The error associated with the api result failure */
   error?: string;
+  /** The url to redirect to */
   redirectTo?: string;
 };
 
@@ -184,6 +190,10 @@ export async function registerAccount(payload: {
   });
 }
 
+/**
+ * A function that get's the user's stored session, and invalidates the refresh token associated with it
+ * @returns The success or error message
+ */
 export async function logoutSession() {
   const refresh = getRefreshToken();
 

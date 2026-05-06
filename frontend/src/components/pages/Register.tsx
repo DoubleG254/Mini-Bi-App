@@ -1,4 +1,4 @@
-import { A } from "@solidjs/router";
+import { A, redirect } from "@solidjs/router";
 import { createSignal, Show, Switch, Match } from "solid-js";
 import { ChartBarIcon } from "lucide-solid";
 import { registerAccount, type ApiResult } from "../../lib/api";
@@ -33,6 +33,8 @@ export default function RegisterPage() {
         success: true,
         message: response.message ?? "Account created successfully. Sign in to continue.",
       });
+
+      throw redirect("/")
     } catch (error) {
       setResult({
         success: false,
