@@ -14,7 +14,6 @@ class Dataset (models.Model):
 
     def __str__(self):
         return self.name
-
 class Report(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)

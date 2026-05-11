@@ -18,6 +18,8 @@ from .serializers import (
 )
 import os
 from .ai_pipeline.pipeline import run_pipeline
+from .agent.main import main as run_agent_pipeline
+from pathlib import Path
 
 
 class LogoutSerializer(serializers.Serializer):
@@ -127,7 +129,7 @@ class DatasetViewSet(ModelViewSet):
         if file_path.endswith('.csv') or file_path.endswith('.xlsx') or file_path.endswith('.xls'):
             print("File type is valid, proceeding with classification.")
 
-            report = run_pipeline(file_path, dataset_instance=instance)
+            report = run_agent_pipeline(file_path, dataset_instance=instance,user=self.request.user)
             print("Report created with ID:", report.id)
             serializer = ReportSerializer(report)
             return serializer.data

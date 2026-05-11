@@ -58,6 +58,61 @@ class Agent:
 
         return tools_string
 
+    def _get_openai_tools_schema(self) -> list[dict]:
+        """Convert tool functions to OpenAI function schema format.
+        
+        Returns:
+            list[dict]: List of tool schemas compatible with OpenAI API
+        """
+        openai_tools = []
+        for tool_name, tool_info in self.tools.items():
+            func = tool_info["callable"]
+            sig = inspect.signature(func)
+            
+            # Build parameters schema
+            properties = {}
+            required = []
+            
+            for param_name, param in sig.parameters.items():
+                # Skip DataFrameContext parameters - these are injected by _run_tool
+                if param.annotation is DataFrameContext:
+                    continue
+                    
+                param_type = "string"  # default
+                if param.annotation == int:
+                    param_type = "integer"
+                elif param.annotation == float:
+                    param_type = "number"
+                elif param.annotation == bool:
+                    param_type = "boolean"
+                elif param.annotation in (list, list[str]):
+                    param_type = "array"
+                
+                properties[param_name] = {
+                    "type": param_type,
+                    "description": f"Parameter: {param_name}"
+                }
+                
+                # All parameters without defaults are required
+                if param.default is inspect.Parameter.empty:
+                    required.append(param_name)
+            
+            tool_schema = {
+                "type": "function",
+                "function": {
+                    "name": tool_name,
+                    "description": tool_info["docs"] or f"Call the {tool_name} function",
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required
+                    }
+                }
+            }
+            openai_tools.append(tool_schema)
+        
+        return openai_tools
+
     def tool(self, func):
         """The @Agent.tool decorator for tools
 
@@ -83,25 +138,30 @@ class Agent:
                     break
             try:
                 tool_response = tool_found["callable"](**model_args)
+                
+                # Serialize the response to a JSON string
                 if tool_response is None:
-                    self.history.append(
-                        {
-                            "role": "tool",
-                            "content": "Operation complete",
-                            "tool_name": tool_name,
-                        }
-                    )
+                    content_str = "Operation complete"
+                elif hasattr(tool_response, 'model_dump_json'):
+                    # If it's a Pydantic model, use its JSON method
+                    content_str = tool_response.model_dump_json()
+                elif isinstance(tool_response, dict):
+                    # If it's a dict, convert to JSON string
+                    content_str = json.dumps(tool_response)
                 else:
+                    # Fallback for strings or other types
+                    content_str = str(tool_response)
 
-                    self.history.append(
-                        {
-                            "role": "tool",
-                            "content": tool_response,
-                            "tool_name": tool_name,
-                        }
-                    )
-                # Usisahau kutoa hii
-                self.context.dataframe.to_csv("new.csv")
+                self.history.append(
+                    {
+                        "role": "tool",
+                        "content": content_str,  # Now it's a guaranteed JSON string
+                        "tool_name": tool_name,
+                        # Optional: Add tool_call_id if your API requires it
+                        # "tool_call_id": tool_call_id 
+                    }
+                )
+                return tool_response
             except Exception as e:
                 self.history.append(
                     {
@@ -123,11 +183,13 @@ class Agent:
         self, query: str | None = None, model: str | None = None, stream: bool = False
     ):
         # self.history.append({"role": "user", "content": query})
+        last_result = None
         while True:
             response = self._openai.chat.completions.create(
                 model=model if model else self.model,
                 messages=self.history,
                 tool_choice="required",
+                tools=self._get_openai_tools_schema() if self.tools else None,
             )
             self.history.append(response.choices[0].message)
             if response.choices[0].finish_reason == "stop":
@@ -138,10 +200,12 @@ class Agent:
                 print(response.choices[0])
                 for _tool in response.choices[0].message.tool_calls:
                     # Call each tool and add the values back to the loop for continuation
-                    self._run_tool(
+                    last_result = self._run_tool(
                         tool_name=_tool.function.name,
                         model_args=json.loads(_tool.function.arguments),
                     )
+                    
 
             else:
                 print("Will be handled later!!!")
+        return last_result
