@@ -3,6 +3,7 @@ from typing import Iterable, Callable, Optional
 import json
 from .context import DataFrameContext
 import inspect
+from django.conf import settings
 
 
 class Agent:
@@ -60,7 +61,7 @@ class Agent:
 
     def _get_openai_tools_schema(self) -> list[dict]:
         """Convert tool functions to OpenAI function schema format.
-        
+
         Returns:
             list[dict]: List of tool schemas compatible with OpenAI API
         """
@@ -68,16 +69,16 @@ class Agent:
         for tool_name, tool_info in self.tools.items():
             func = tool_info["callable"]
             sig = inspect.signature(func)
-            
+
             # Build parameters schema
             properties = {}
             required = []
-            
+
             for param_name, param in sig.parameters.items():
                 # Skip DataFrameContext parameters - these are injected by _run_tool
                 if param.annotation is DataFrameContext:
                     continue
-                    
+
                 param_type = "string"  # default
                 if param.annotation == int:
                     param_type = "integer"
@@ -87,30 +88,31 @@ class Agent:
                     param_type = "boolean"
                 elif param.annotation in (list, list[str]):
                     param_type = "array"
-                
+
                 properties[param_name] = {
                     "type": param_type,
-                    "description": f"Parameter: {param_name}"
+                    "description": f"Parameter: {param_name}",
                 }
-                
+
                 # All parameters without defaults are required
                 if param.default is inspect.Parameter.empty:
                     required.append(param_name)
-            
+
             tool_schema = {
                 "type": "function",
                 "function": {
                     "name": tool_name,
-                    "description": tool_info["docs"] or f"Call the {tool_name} function",
+                    "description": tool_info["docs"]
+                    or f"Call the {tool_name} function",
                     "parameters": {
                         "type": "object",
                         "properties": properties,
-                        "required": required
-                    }
-                }
+                        "required": required,
+                    },
+                },
             }
             openai_tools.append(tool_schema)
-        
+
         return openai_tools
 
     def tool(self, func):
@@ -138,11 +140,11 @@ class Agent:
                     break
             try:
                 tool_response = tool_found["callable"](**model_args)
-                
+
                 # Serialize the response to a JSON string
                 if tool_response is None:
                     content_str = "Operation complete"
-                elif hasattr(tool_response, 'model_dump_json'):
+                elif hasattr(tool_response, "model_dump_json"):
                     # If it's a Pydantic model, use its JSON method
                     content_str = tool_response.model_dump_json()
                 elif isinstance(tool_response, dict):
@@ -158,7 +160,7 @@ class Agent:
                         "content": content_str,  # Now it's a guaranteed JSON string
                         "tool_name": tool_name,
                         # Optional: Add tool_call_id if your API requires it
-                        # "tool_call_id": tool_call_id 
+                        # "tool_call_id": tool_call_id
                     }
                 )
                 return tool_response
@@ -180,10 +182,17 @@ class Agent:
             )
 
     def run(
-        self, query: str | None = None, model: str | None = None, stream: bool = False
+        self,
+        query: str | None = None,
+        model: str | None = None,
+        stream: bool = False,
+        context: DataFrameContext | None = None,
     ):
         # self.history.append({"role": "user", "content": query})
-        last_result = None
+        if context:
+            self.context = context
+        elif self.context is None:
+            raise Exception("Empty context")   
         while True:
             response = self._openai.chat.completions.create(
                 model=model if model else self.model,
@@ -195,6 +204,8 @@ class Agent:
             if response.choices[0].finish_reason == "stop":
                 # When the loop is complete
                 print(response.choices[0].message)
+                #  I guess I'll do the saving myselfy
+                self.context.update_to_clean_dataset()
                 break
             elif response.choices[0].finish_reason == "tool_calls":
                 print(response.choices[0])
@@ -204,8 +215,6 @@ class Agent:
                         tool_name=_tool.function.name,
                         model_args=json.loads(_tool.function.arguments),
                     )
-                    
 
             else:
                 print("Will be handled later!!!")
-        return last_result
