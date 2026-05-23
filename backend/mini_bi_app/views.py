@@ -14,12 +14,15 @@ from .serializers import (
     CustomTokenObtainPairSerializer,
     UserSerializer,
     DatasetSerializer,
-    ReportSerializer
+    ReportSerializer,
 )
 import os
 from .ai_pipeline.pipeline import run_pipeline
 from .agent.main import main as run_agent_pipeline
 from pathlib import Path
+from .agent import *
+
+# Agent instancesss
 
 
 class LogoutSerializer(serializers.Serializer):
@@ -36,7 +39,7 @@ class RegisterView(GenericAPIView):
             serializer.save()
             return Response(
                 {"message": "User registered successfully"},
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -50,10 +53,10 @@ class LoginView(GenericAPIView):
         if serializer.is_valid():
             return Response(
                 {
-                    "access": serializer.validated_data['access'],
-                    "refresh": serializer.validated_data['refresh']
+                    "access": serializer.validated_data["access"],
+                    "refresh": serializer.validated_data["refresh"],
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -70,14 +73,10 @@ class LogoutView(GenericAPIView):
                 token = RefreshToken(refresh_token)
                 token.blacklist()
                 return Response(
-                    {"message": "Logged out successfully"},
-                    status=status.HTTP_200_OK
+                    {"message": "Logged out successfully"}, status=status.HTTP_200_OK
                 )
             except Exception as e:
-                return Response(
-                    {"error": str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -95,19 +94,24 @@ class UserProfileView(GenericAPIView):
             serializer.save()
             return Response(
                 {"message": "Profile updated successfully", "user": serializer.data},
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class ReportViewSet(ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     permission_classes = [IsAuthenticated]
+
     def get_queryset(self):
         print("Getting reports for user:", self.request.user)
         return Report.objects.filter(dataset__user=self.request.user)
- 
-    
+
+
+
+
+
 class DatasetViewSet(ModelViewSet):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
@@ -119,29 +123,82 @@ class DatasetViewSet(ModelViewSet):
         return Dataset.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        cleaner_agent = Agent(
+            base_url="https://ollama.com/v1",
+            api_key=os.getenv("OLLAMA_API_KEY"),
+            model="ministral-3:8b-cloud",
+            system_prompt=cleaning_prompt(),
+            tools=[
+                drop_row,
+                drop_column,
+                get_dataset_head,
+                save_dataset,
+                get_all_columns,
+                get_dataset_description,
+                get_null_values,
+                fetch_column,
+                fill_null_values,
+            ],
+        )
+
+        visualization_agent = VisualizationAgent(
+            base_url="https://ollama.com/v1",
+            api_key=os.getenv("OLLAMA_API_KEY2"),
+            model="ministral-3:8b-cloud",
+            system_prompt=visualization_prompt(),
+            tools=[
+                get_dataset_head,
+                get_all_columns,
+                get_dataset_description,
+                compare_correlation,
+                whole_dataset_correlation,
+                create_chart,
+            ],
+        )
         print("Creating dataset for user:", self.request.user)
         instance = serializer.save(user=self.request.user)
-        
+
         file_path = instance.file.path
         print("File path:", file_path)
-        
 
-        if file_path.endswith('.csv') or file_path.endswith('.xlsx') or file_path.endswith('.xls'):
+        if (
+            file_path.endswith(".csv")
+            or file_path.endswith(".xlsx")
+            or file_path.endswith(".xls")
+        ):
             print("File type is valid, proceeding with classification.")
+            dataset_context = DataFrameContext(file_path)
 
-            report = run_agent_pipeline(file_path, dataset_instance=instance,user=self.request.user)
-            print("Report created with ID:", report.id)
-            serializer = ReportSerializer(report)
+            print("Cleaning the dataset....")
+            cleaner_agent.run(context=dataset_context)
+
+            # Hope everything goes through right
+            visualization_response = visualization_agent.run(context=dataset_context)
+
+            serializer = ReportSerializer(
+                Report.objects.create(
+                    dataset=instance,
+                    user=self.request.user,
+                    summary={},
+                    charts=visualization_response,
+                )
+            )
             return serializer.data
+
+            # report = run_agent_pipeline(file_path, dataset_instance=instance,user=self.request.user)
+            # print("Report created with ID:", report.id)
+
         else:
             print("Unsupported file type:", file_path)
             instance.delete()  # Clean up the uploaded file
             if os.path.exists(file_path):
                 os.remove(file_path)
                 print(f"File deleted: {file_path}")
-            raise ValidationError({
-                "file": "Unsupported file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)."
-            })
+            raise ValidationError(
+                {
+                    "file": "Unsupported file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)."
+                }
+            )
 
     def perform_destroy(self, instance):
         """Delete both the database instance and the actual file from filesystem"""

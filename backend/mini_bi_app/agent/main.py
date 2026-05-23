@@ -27,45 +27,44 @@ def main(dataset_path, dataset_instance=None,user=None):
             fill_null_values,
         ],
     )
-    file_path = cleaner.run()
-    if file_path is None:
-        file_path = dataset_path  # Fallback to original dataset if no cleaned file is produced
-    print(f"Dataset saved at: {file_path}")
+    cleaner.run()
+ # Fallback to original dataset if no cleaned file is produced
+    # print(f"Dataset saved at: {file_path}")
+    
+    # cleaning_agent = VisualizationAgent(
+    #     base_url="https://ollama.com/v1",
+    #     api_key=os.getenv("OLLAMA_API_KEY"),
+    #     model="ministral-3:8b-cloud",
+    #     system_prompt=visualization_prompt(),
+    #     dataframe_context=DataFrameContext(file_path),
+    #     tools=[
+    #         get_dataset_head,
+    #         get_all_columns,
+    #         get_dataset_description,
+    #         compare_correlation,
+    #         whole_dataset_correlation,
+    #         create_chart,
+    #     ],
+    # )
+    # charts_list = []
+    # for item in cleaning_agent.run():
+    #     try:
+    #         # If item is already a dict (from model_dump), skip parsing
+    #         if isinstance(item, dict):
+    #             charts_list.append(item)
+    #         else:
+    #             charts_list.append(json.loads(item))
+    #     except (json.JSONDecodeError, TypeError) as e:
+    #         print(f"Skipping invalid item: {e}")
+    #         continue
 
-    cleaning_agent = VisualizationAgent(
-        base_url="https://ollama.com/v1",
-        api_key=os.getenv("OLLAMA_API_KEY"),
-        model="ministral-3:8b-cloud",
-        system_prompt=visualization_prompt(),
-        dataframe_context=DataFrameContext(file_path),
-        tools=[
-            get_dataset_head,
-            get_all_columns,
-            get_dataset_description,
-            compare_correlation,
-            whole_dataset_correlation,
-            create_chart,
-        ],
-    )
-    charts_list = []
-    for item in cleaning_agent.run():
-        try:
-            # If item is already a dict (from model_dump), skip parsing
-            if isinstance(item, dict):
-                charts_list.append(item)
-            else:
-                charts_list.append(json.loads(item))
-        except (json.JSONDecodeError, TypeError) as e:
-            print(f"Skipping invalid item: {e}")
-            continue
-
-    report = Report.objects.create(
-        dataset=dataset_instance,
-        user=user,
-        summary={},
-        charts=charts_list
-    )
-    return report
+    # report = Report.objects.create(
+    #     dataset=dataset_instance,
+    #     user=user,
+    #     summary={},
+    #     charts=charts_list
+    # )
+    # return report
 # if __name__ == "__main__":
 
 #     # def problem(a, b):
