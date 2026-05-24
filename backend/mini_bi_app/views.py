@@ -16,6 +16,7 @@ from .serializers import (
     DatasetSerializer,
     ReportSerializer,
 )
+from rest_framework.decorators import api_view, permission_classes
 import os
 from .ai_pipeline.pipeline import run_pipeline
 from .agent.main import main as run_agent_pipeline
@@ -109,7 +110,18 @@ class ReportViewSet(ModelViewSet):
         return Report.objects.filter(dataset__user=self.request.user)
 
 
-
+# Endpoint ya a specific report, Sioni any
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def fetch_specific_report(request, pk):
+    try:
+        report = Report.objects.get(id=pk)
+        print(report)
+        return Response(data=ReportSerializer(report).data, status=status.HTTP_200_OK)
+    except Report.DoesNotExist:
+        return Response(
+            data={"message": "report not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 class DatasetViewSet(ModelViewSet):
@@ -132,7 +144,6 @@ class DatasetViewSet(ModelViewSet):
                 drop_row,
                 drop_column,
                 get_dataset_head,
-                save_dataset,
                 get_all_columns,
                 get_dataset_description,
                 get_null_values,
@@ -175,12 +186,27 @@ class DatasetViewSet(ModelViewSet):
             # Hope everything goes through right
             visualization_response = visualization_agent.run(context=dataset_context)
 
+            charts_list = []
+            for item in visualization_response:
+                try:
+                    # If item is already a dict (from model_dump), skip parsing
+                    if isinstance(item, dict):
+                        charts_list.append(item)
+                    else:
+                        charts_list.append(json.loads(item))
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"Skipping invalid item: {e}")
+                    continue
+
             serializer = ReportSerializer(
                 Report.objects.create(
                     dataset=instance,
                     user=self.request.user,
-                    summary={},
-                    charts=visualization_response,
+                    summary={
+                        'Cleaning summary': cleaner_agent.summary,
+                        "Visualization Summary": visualization_agent.summary 
+                    },
+                    charts=charts_list,
                 )
             )
             return serializer.data

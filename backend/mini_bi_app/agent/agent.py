@@ -4,6 +4,7 @@ import json
 from .context import DataFrameContext
 import inspect
 from django.conf import settings
+import openai
 
 
 class Agent:
@@ -181,7 +182,17 @@ class Agent:
                 }
             )
 
-    def run(
+    def run(self, context: DataFrameContext | None = None):
+        try:
+            return self._run(context=context)
+        except openai.InternalServerError:
+            print("Sleeping ... Will be awaking in a few")
+            import time
+
+            time.sleep(5)
+            return self.run(context=context)
+
+    def _run(
         self,
         query: str | None = None,
         model: str | None = None,
@@ -192,7 +203,7 @@ class Agent:
         if context:
             self.context = context
         elif self.context is None:
-            raise Exception("Empty context")   
+            raise Exception("Empty context")
         while True:
             response = self._openai.chat.completions.create(
                 model=model if model else self.model,
@@ -205,6 +216,7 @@ class Agent:
                 # When the loop is complete
                 print(response.choices[0].message)
                 #  I guess I'll do the saving myselfy
+                self.summary = response.choices[0].message.content
                 self.context.update_to_clean_dataset()
                 break
             elif response.choices[0].finish_reason == "tool_calls":

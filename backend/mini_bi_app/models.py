@@ -23,6 +23,10 @@ class Report(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+class Chart(models.Model):
+    report = models.ForeignKey(Report, on_delete=models.CASCADE)
 
 class ColumnTrainingData(models.Model):
     column_name = models.CharField(max_length=100)

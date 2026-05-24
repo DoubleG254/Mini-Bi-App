@@ -12,7 +12,6 @@ import pandas as pd
 import numpy as np
 
 
-
 # Modelssssss
 class Chart(BaseModel):
     chart_title: str
@@ -139,6 +138,7 @@ Need it to yield the graphs as we go.
 
 """
 
+
 # encoder flani
 class NumPyEncoder(json.JSONEncoder):
 
@@ -173,7 +173,7 @@ class VisualizationAgent(Agent):
             dataframe_context,
         )
 
-    def run(
+    def _run(
         self,
         query=None,
         model=None,
@@ -195,6 +195,7 @@ class VisualizationAgent(Agent):
             if response.choices[0].finish_reason == "stop":
                 # When the loop is complete
                 print(response.choices[0].message)
+                self.summary = response.choices[0].message.content
                 break
             elif response.choices[0].finish_reason == "tool_calls":
                 print(response.choices[0])

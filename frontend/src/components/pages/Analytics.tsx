@@ -21,6 +21,7 @@ import {
   ChartOptions,
   ChartType,
 } from "chart.js";
+import ReactMarkdown from 'react-markdown'
 
 // Register Chart.js components
 ChartJS.register(
@@ -86,6 +87,7 @@ export default function AnalyticsPage() {
 
   const summaryEntries = () => Object.entries(report()?.summary ?? {});
   const charts = () => Object.values(report()?.charts ?? {});
+
 
   const formatDate = (value?: string) => {
     if (!value) return "Unavailable";
@@ -240,9 +242,9 @@ export default function AnalyticsPage() {
                 {([columnName, details]) => (
                   <div class="rounded-lg border border-border p-4 bg-card/50">
                     <div class="mb-2 font-medium text-base">{columnName}</div>
-                    <pre class="text-xs whitespace-pre-wrap text-muted-foreground font-mono">
-                      {JSON.stringify(details, null, 2)}
-                    </pre>
+                    <div class="text-xs whitespace-pre-wrap text-muted-foreground font-mono" >                      
+                      {/* {md.render(details)} */}
+                    </div>
                   </div>
                 )}
               </For>

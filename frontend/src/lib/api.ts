@@ -36,7 +36,7 @@ export type ReportRecord = {
   id: number;
   user: number;
   dataset: number;
-  summary: Record<string, unknown>;
+  summary: Record<string, string>;
   charts: Record<string, ChartConfig>;
   created_at: string;
 };
@@ -157,8 +157,9 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
   if (!response.ok) {
     throw new Error(await extractErrorMessage(response));
   }
-
-  return parseJsonResponse<T>(response);
+  const res = parseJsonResponse<T>(response)
+  console.log(res)
+  return res;
 }
 
 export async function fetchCurrentUser() {
