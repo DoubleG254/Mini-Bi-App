@@ -12,6 +12,7 @@ export default function HistoryPage() {
   const reports = createAsync(() => reportsQuery());
 
   const reportSet = createMemo(() => new Set((reports() ?? []).map((report) => report.dataset)));
+  const sortedSets = createMemo(() => datasets()?.sort((oldSet, newSet) => new Date(newSet.created_at).getTime() - new Date(oldSet.created_at).getTime()), [])
 
   const formatDate = (value: string) => {
     const date = new Date(value);
@@ -31,7 +32,7 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        <Show when={datasets()?.length} fallback={
+        <Show when={sortedSets()?.length} fallback={
           <div class="text-center py-12">
             <p class="text-muted-foreground">
               No datasets found
@@ -39,7 +40,7 @@ export default function HistoryPage() {
           </div>
         }>
           <div class="space-y-4">
-            <For each={datasets() ?? []}>{(dataset) => (
+            <For each={sortedSets() ?? []}>{(dataset) => (
               <div
                 class="p-6 rounded-lg border border-border bg-card hover:border-foreground transition-colors"
               >

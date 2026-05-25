@@ -37,22 +37,25 @@ export type ReportRecord = {
   user: number;
   dataset: number;
   summary: Record<string, string>;
-  charts: Record<string, ChartConfig>;
+  charts: ChartConfig[] | Record<string, ChartConfig>;
   created_at: string;
 };
 
 export type ChartConfig = {
   id: string;
-  type: "line" | "bar" | "scatter" | string;
+  type: "line" | "bar" | "scatter" | "pie" | string;
   title: string;
   labels?: string[];
   datasets: Array<{
     label: string;
     data: Array<number | { x: number; y: number }>;
-    borderColor?: string;
-    backgroundColor?: string;
+    borderColor?: string | string[];
+    backgroundColor?: string | string[];
     fill?: boolean;
     tension?: number;
+    borderWidth?: number;
+    pointRadius?: number;
+    pointHoverRadius?: number;
   }>;
   correlation_coefficient?: number;
 };
@@ -198,18 +201,18 @@ export async function registerAccount(payload: {
 export async function logoutSession() {
   const refresh = getRefreshToken();
 
-  if (!refresh) {
-    clearAuthSession();
-    return { message: "Signed out locally" };
-  }
+  // if (!refresh) {
+  //   clearAuthSession();
+  //   return { message: "Signed out locally" };
+  // }
 
-  const result = await requestJson<{ message: string }>("/logout/", {
-    method: "POST",
-    body: JSON.stringify({ refresh }),
-  });
+  // const result = await requestJson<{ message: string }>("/logout/", {
+  //   method: "POST",
+  //   body: JSON.stringify({ refresh }),
+  // });
 
   clearAuthSession();
-  return result;
+  // return result;
 }
 
 export async function fetchDatasets() {
