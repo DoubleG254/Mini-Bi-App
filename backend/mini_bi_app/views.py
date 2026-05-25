@@ -154,7 +154,7 @@ class DatasetViewSet(ModelViewSet):
 
         visualization_agent = VisualizationAgent(
             base_url="https://ollama.com/v1",
-            api_key=os.getenv("OLLAMA_API_KEY2"),
+            api_key=os.getenv("OLLAMA_API_KEY"),
             model="ministral-3:8b-cloud",
             system_prompt=visualization_prompt(),
             tools=[

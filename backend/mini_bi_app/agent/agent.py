@@ -214,6 +214,9 @@ class Agent:
             self.history.append(response.choices[0].message)
             if response.choices[0].finish_reason == "stop":
                 # When the loop is complete
+                # Check if the model is done or it just sent a tool response without calling any tools
+                if len(self.history) < 3:
+                    continue
                 print(response.choices[0].message)
                 #  I guess I'll do the saving myselfy
                 self.summary = response.choices[0].message.content

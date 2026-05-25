@@ -10,18 +10,20 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
   ScatterController,
   LineController,
   BarController,
+  PieController,
   Chart,
   ChartData,
   ChartOptions,
   ChartType,
 } from "chart.js";
-import ReactMarkdown from 'react-markdown'
+import MarkdownIt from 'markdown-it'
 
 // Register Chart.js components
 ChartJS.register(
@@ -30,13 +32,17 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
   ScatterController,
   LineController,
-  BarController
+  BarController,
+  PieController
 );
+
+const md = new MarkdownIt();
 
 type ChartPoint = Record<string, string | number>;
 
@@ -242,9 +248,7 @@ export default function AnalyticsPage() {
                 {([columnName, details]) => (
                   <div class="rounded-lg border border-border p-4 bg-card/50">
                     <div class="mb-2 font-medium text-base">{columnName}</div>
-                    <div class="text-xs whitespace-pre-wrap text-muted-foreground font-mono" >                      
-                      {/* {md.render(details)} */}
-                    </div>
+                    <div class="prose prose-sm text-xs text-muted-foreground" innerHTML={md.render(String(details))} />
                   </div>
                 )}
               </For>

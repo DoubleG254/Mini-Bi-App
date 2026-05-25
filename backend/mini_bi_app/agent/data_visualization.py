@@ -88,7 +88,7 @@ def whole_dataset_correlation(
     df_context: DataFrameContext,
     method: Literal["pearson", "kendall", "spearman"] = "pearson",
 ) -> str:
-    """Get the correlation of the whole dataset
+    """Get the correlation of the whole dataset. Done for numeric columns only
 
     Args:
         method (Literal[&quot;pearson&quot;, &quot;kendall&quot;, &quot;spearman&quot;], optional): The correlation method to be used. Defaults to "pearson".
@@ -97,7 +97,7 @@ def whole_dataset_correlation(
     Returns:
         str: A string representation of the correlation in the whole dataset
     """
-    return df_context.dataframe.corr(method=method).to_string()
+    return df_context.dataframe.corr(method=method, numeric_only=True).to_string()
 
 
 def create_chart(
