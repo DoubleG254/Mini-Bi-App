@@ -159,7 +159,7 @@ export default function UploadPage() {
         <div class="mt-8 flex justify-end">
           <button
             on:click={handleUpload}
-            disabled={uploading()}
+            disabled={uploading() || !file()}
             class="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             <Show when={uploading()} fallback="Upload & Analyze">Analyzing...</Show>

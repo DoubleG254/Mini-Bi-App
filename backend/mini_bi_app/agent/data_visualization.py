@@ -190,6 +190,7 @@ class VisualizationAgent(Agent):
                 model=model if model else self.model,
                 messages=self.history,
                 tool_choice="required",
+                tools=self._get_openai_tools_schema() if self.tools else None,
             )
             self.history.append(response.choices[0].message)
             if response.choices[0].finish_reason == "stop":
