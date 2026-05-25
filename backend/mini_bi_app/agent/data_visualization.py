@@ -194,6 +194,15 @@ class VisualizationAgent(Agent):
             self.history.append(response.choices[0].message)
             if response.choices[0].finish_reason == "stop":
                 # When the loop is complete
+                if len(self.history) < 3:
+                    self.history.append(
+                        {
+                            "role": "developer",
+                            "content": "Model did not call any tools, retrying... You replied instead of making a tool call",
+                            # "tool_name": "no_tool_called",
+                        }
+                    )
+                    continue
                 print(response.choices[0].message)
                 self.summary = response.choices[0].message.content
                 break
