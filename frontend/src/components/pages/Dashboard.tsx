@@ -1,5 +1,5 @@
 import { createAsync, query } from "@solidjs/router";
-import { For, Show } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import { Navigation } from "../Navigation";
 import { TrendingUp, Database, FileText, Activity } from "lucide-solid";
 import { A } from "@solidjs/router";
@@ -14,25 +14,25 @@ export default function DashboardPage() {
   const datasets = createAsync(() => datasetsQuery());
   const reports = createAsync(() => reportsQuery());
 
-  const recentActivity = () => {
+  const recentActivity = createMemo(() => {
     const analyzedDatasets = new Set((reports() ?? []).map((report) => report.dataset));
 
     return (datasets() ?? [])
-      .slice()
-      .sort((left, right) => right.created_at.localeCompare(left.created_at))
+      .sort((earliest, latest) => new Date(latest.created_at).getTime() - new Date(earliest.created_at).getTime())
       .slice(0, 4)
       .map((dataset) => ({
         name: dataset.name,
         date: new Date(dataset.created_at).toLocaleString(),
         status: analyzedDatasets.has(dataset.id) ? "Analyzed" : "Uploaded",
+        id: dataset.id
       }));
-  };
+  }, [])
 
   const stats = () => [
     { label: "Total Datasets", value: String(datasets()?.length ?? 0), icon: Database, change: "Synced from server" },
     { label: "Reports Generated", value: String(reports()?.length ?? 0), icon: FileText, change: "Backend pipeline output" },
     { label: "Current User", value: profile()?.first_name || profile()?.email || "Signed in", icon: Activity, change: profile()?.username || "Authenticated session" },
-    { label: "Latest Upload", value: datasets()?.[0]?.created_at ? new Date(datasets()![0].created_at).toLocaleDateString() : "None", icon: TrendingUp, change: "Most recent dataset" },
+    { label: "Latest Upload", value: recentActivity().at(0) ? recentActivity().at(0)?.date : "None", icon: TrendingUp, change: "Most recent dataset" },
   ];
 
   const ready = () => Boolean(profile() && datasets() && reports());
@@ -77,7 +77,7 @@ export default function DashboardPage() {
               <div class="space-y-4">
                 <For each={recentActivity()}>
                   {(item) => (
-                  <div class="flex items-center justify-between py-3 border-b border-border last:border-0">
+                  <A class="flex items-center justify-between p-4 rounded-lg border hover:bg-black hover:text-white transition-colors duration-400 border-border hover:border-foreground" href={`analytics/${item.id}`}>
                     <div>
                       <div class="mb-1">{item.name}</div>
                       <div class="text-sm text-muted-foreground">{item.date}</div>
@@ -85,7 +85,7 @@ export default function DashboardPage() {
                     <div class="px-3 py-1 rounded-full bg-accent text-accent-foreground text-sm">
                       {item.status}
                     </div>
-                  </div>
+                  </A>
                 )}
                 </For>
               </div>

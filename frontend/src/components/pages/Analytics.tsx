@@ -1,7 +1,7 @@
 import { Navigation } from "../Navigation";
 import { TrendingUp, TrendingDown, Minus } from "lucide-solid";
 import { createAsync, query, useParams } from "@solidjs/router";
-import { For, Show, Switch, Match, onMount } from "solid-js";
+import { For, Show, Switch, Match, onCleanup, onMount, createSignal, createEffect } from "solid-js";
 import { fetchDatasets, fetchReports, type ChartConfig } from "../../lib/api";
 import {
   Chart as ChartJS,
@@ -19,11 +19,10 @@ import {
   BarController,
   PieController,
   Chart,
-  ChartData,
   ChartOptions,
   ChartType,
 } from "chart.js";
-import MarkdownIt from 'markdown-it'
+import {SolidMarkdown} from "solid-markdown"
 
 // Register Chart.js components
 ChartJS.register(
@@ -49,30 +48,36 @@ type ChartPoint = Record<string, string | number>;
 // Helper component to render a Chart.js chart
 const ChartComponent = (props: { chartConfig: any; title: string }) => {
   let canvasRef: HTMLCanvasElement | undefined;
+  let chartInstance: Chart | undefined;
+  let frameId: number | null = null;
 
   onMount(() => {
-    if (!canvasRef) return;
-    
-    // Destroy previous instance if exists
-    const existingChart = Chart.getChart(canvasRef);
-    if (existingChart) {
-      existingChart.destroy();
+    frameId = window.requestAnimationFrame(() => {
+      if (!canvasRef) return;
+
+      const existingChart = Chart.getChart(canvasRef);
+      if (existingChart) {
+        existingChart.destroy();
+      }
+
+      chartInstance = new Chart(canvasRef, {
+        type: props.chartConfig.type,
+        data: props.chartConfig.data,
+        options: props.chartConfig.options,
+      });
+    });
+  });
+
+  onCleanup(() => {
+    if (frameId !== null) {
+      window.cancelAnimationFrame(frameId);
     }
 
-    const newChart = new Chart(canvasRef, {
-      type: props.chartConfig.type,
-      data: props.chartConfig.data,
-      options: props.chartConfig.options,
-    });
-
-    // Cleanup on unmount
-    return () => {
-      if (newChart) newChart.destroy();
-    };
+    chartInstance?.destroy();
   });
 
   return (
-    <div class="h-[350px] w-full">
+    <div class="h-87.5 w-full">
       <canvas ref={canvasRef} />
     </div>
   );
@@ -92,7 +97,42 @@ export default function AnalyticsPage() {
   const dataset = () => (datasets() ?? []).find((item) => item.id === datasetId());
 
   const summaryEntries = () => Object.entries(report()?.summary ?? {});
-  const charts = () => Object.values(report()?.charts ?? {});
+  const charts = () => {
+    const payload = report()?.charts ?? [];
+    return Array.isArray(payload) ? payload : Object.values(payload);
+  };
+
+  // Lazy/sequential chart mounting to avoid blocking the main thread
+  const [visibleCount, setVisibleCount] = createSignal(0);
+  let rafId: number | null = null;
+
+  createEffect(() => {
+    const list = charts();
+    setVisibleCount(0);
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    if (!list || list.length === 0) return;
+    let i = 0;
+    function step() {
+      i += 1;
+      setVisibleCount(i);
+      if (i < list.length) {
+        rafId = window.requestAnimationFrame(step);
+      } else {
+        rafId = null;
+      }
+    }
+    rafId = window.requestAnimationFrame(step);
+  });
+
+  onCleanup(() => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  });
 
 
   const formatDate = (value?: string) => {
@@ -121,13 +161,55 @@ export default function AnalyticsPage() {
       { label: "Columns Analyzed", value: String(summary.length), change: "From report summary", trend: "up" },
       { label: "Financial Columns", value: String(semanticCounts.financial_total ?? 0), change: "Detected by backend", trend: "up" },
       { label: "Time Fields", value: String((semanticCounts.date ?? 0) + (semanticCounts.timestamp ?? 0) + (semanticCounts.time_period ?? 0)), change: "Temporal dimensions", trend: "neutral" },
-      { label: "Dataset Name", value: dataset()?.name ?? "Unknown", change: formatDate(dataset()?.created_at), trend: "neutral" },
     ];
   };
 
   const getChartConfig = (chart: ChartConfig) => {
     const labels = chart.labels ?? [];
     const datasets = chart.datasets ?? [];
+
+    if (chart.type === "pie") {
+      const firstDataset = datasets[0];
+
+      return {
+        type: "pie" as ChartType,
+        data: {
+          labels,
+          datasets: [{
+            label: firstDataset?.label ?? "Distribution",
+            data: firstDataset?.data ?? [],
+            backgroundColor: Array.isArray(firstDataset?.backgroundColor)
+              ? firstDataset?.backgroundColor
+              : [
+                  "rgba(255, 99, 132, 0.8)",
+                  "rgba(54, 162, 235, 0.8)",
+                  "rgba(255, 206, 86, 0.8)",
+                  "rgba(75, 192, 192, 0.8)",
+                  "rgba(153, 102, 255, 0.8)",
+                  "rgba(255, 159, 64, 0.8)",
+                ],
+            borderColor: Array.isArray(firstDataset?.borderColor)
+              ? firstDataset?.borderColor
+              : [
+                  "rgb(255, 99, 132)",
+                  "rgb(54, 162, 235)",
+                  "rgb(255, 206, 86)",
+                  "rgb(75, 192, 192)",
+                  "rgb(153, 102, 255)",
+                  "rgb(255, 159, 64)",
+                ],
+            borderWidth: firstDataset?.borderWidth ?? 2,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true },
+          },
+        } as ChartOptions<"pie">,
+      };
+    }
 
     if (chart.type === "scatter") {
       const scatterPoints = datasets.flatMap((series) => {
@@ -141,13 +223,13 @@ export default function AnalyticsPage() {
         type: "scatter" as ChartType,
         data: {
           datasets: [{
-            label: chart.datasets?.label || "Data Points",
+            label: datasets[0]?.label || "Data Points",
             data: scatterPoints,
-            backgroundColor: chart.datasets?.backgroundColor || "rgba(54, 162, 235, 0.6)",
-            borderColor: chart.datasets?.borderColor || "rgba(54, 162, 235, 1)",
-            borderWidth: 1,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            backgroundColor: datasets[0]?.backgroundColor || "rgba(54, 162, 235, 0.6)",
+            borderColor: datasets[0]?.borderColor || "rgba(54, 162, 235, 1)",
+            borderWidth: datasets[0]?.borderWidth ?? 1,
+            pointRadius: datasets[0]?.pointRadius ?? 4,
+            pointHoverRadius: datasets[0]?.pointHoverRadius ?? 6,
           }],
         },
         options: {
@@ -175,7 +257,7 @@ export default function AnalyticsPage() {
       borderColor: series.borderColor || `hsl(${index * 60}, 70%, 50%)`,
       backgroundColor: series.backgroundColor || `hsl(${index * 60}, 70%, 50%, 0.2)`,
       tension: 0.4,
-      borderWidth: 2,
+      borderWidth: series.borderWidth ?? 2,
     }));
 
     return {
@@ -212,10 +294,10 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div class="flex justify-start items-center w-full gap-2">
             <For each={metrics()}>
               {(metric) => (
-                <div class="p-6 rounded-lg border border-border bg-card shadow-sm">
+                <div class="p-6 rounded-lg border border-border bg-card shadow-sm w-full">
                   <div class="flex items-center justify-between mb-4">
                     <span class="text-sm text-muted-foreground">{metric.label}</span>
                     {trendIcon(metric.trend)}
@@ -228,7 +310,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <For each={charts()}>
+            <For each={charts().slice(0, visibleCount())}>
               {(chart) => {
                 const config = getChartConfig(chart);
                 return (
@@ -248,7 +330,9 @@ export default function AnalyticsPage() {
                 {([columnName, details]) => (
                   <div class="rounded-lg border border-border p-4 bg-card/50">
                     <div class="mb-2 font-medium text-base">{columnName}</div>
-                    <div class="prose prose-sm text-xs text-muted-foreground" innerHTML={md.render(String(details))} />
+                    <div class="text-xs whitespace-pre-wrap text-muted-foreground font-mono" >                      
+                      <SolidMarkdown renderingStrategy="reconcile">{details}</SolidMarkdown>
+                    </div>
                   </div>
                 )}
               </For>
